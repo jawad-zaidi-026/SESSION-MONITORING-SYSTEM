@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from django.db import models
-from django.utils.timezone import localtime
+import pytz
 
 class SessionLog(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -10,7 +10,8 @@ class SessionLog(models.Model):
     session_duration = models.DurationField(null=True, blank=True)
 
     def is_anomalous(self):
-        local_login = localtime(self.login_time)
+        india_tz = pytz.timezone("Asia/Kolkata")
+        local_login = self.login_time.astimezone(india_tz)
         return local_login.hour < 7 or local_login.hour > 21
 
     is_anomalous.boolean = True

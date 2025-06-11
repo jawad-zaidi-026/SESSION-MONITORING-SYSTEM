@@ -2,30 +2,29 @@ import os
 import django
 import random
 from datetime import datetime, timedelta
-from django.utils.timezone import now
-from django.contrib.auth.models import User
-from tracker.models import SessionLog
-import pytz  # Correct timezone handling
+import pytz
 
-# Set up Django environment
+# ⚙️ Set up Django environment before importing models
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "sessionmonitor.settings")
 django.setup()
 
-# Define India timezone
-india_tz = pytz.timezone("Asia/Kolkata")
+from django.contrib.auth.models import User
+from django.utils.timezone import now
+from tracker.models import SessionLog
 
-# Create or get users
+# 🌍 Define India timezone
+india_tz = pytz.timezone("Asia/Kolkata")
+current_time = now().astimezone(india_tz)
+
+# 👥 Create or get users
 usernames = ['jawad', 'admin', 'alex', 'sara']
 users = {uname: User.objects.get_or_create(username=uname)[0] for uname in usernames}
 
-# Generate logs
+# 📅 Generate logs
 for uname in usernames:
     user = users[uname]
-    for i in range(7):  # Generate logs for past 7 days
-        base_day = now() - timedelta(days=i)  # Always store past timestamps
-        
-        # Convert base_day to naive datetime before applying timezone
-        base_day = base_day.replace(tzinfo=None)
+    for i in range(7):  # Past 7 days
+        base_day = (current_time - timedelta(days=i)).replace(hour=0, minute=0, second=0, microsecond=0)
 
         is_anomaly = random.choice([True, False])
         if is_anomaly:
@@ -48,20 +47,40 @@ for uname in usernames:
                 logout_time = login_time + timedelta(hours=random.randint(9, 12))
 
         else:
-            # Normal session between 7 AM and 9 PM
             login_hour = random.randint(7, 20)
             login_minute = random.randint(0, 59)
             login_time = base_day.replace(hour=login_hour, minute=login_minute)
             logout_time = login_time + timedelta(hours=random.randint(1, 5))
 
-        # Apply timezone correctly before saving
-        login_time = india_tz.localize(login_time)
-        logout_time = india_tz.localize(logout_time)
+        # 🕒 Timezone-aware timestamps
+        if login_time.tzinfo is None:
+            login_time = india_tz.localize(login_time)
+        else:
+            login_time = login_time.astimezone(india_tz)
 
+        if logout_time.tzinfo is None:
+            logout_time = india_tz.localize(logout_time)
+        else:
+            logout_time = logout_time.astimezone(india_tz)
+
+        # ⛔ Prevent logout_time in future or before login_time
+        if logout_time > current_time:
+            logout_time = min(current_time, login_time + timedelta(minutes=15))
+
+        if logout_time < login_time:
+            logout_time = login_time + timedelta(minutes=5)
+
+        # ⏳ Calculate session duration
+        session_duration = logout_time - login_time
+
+        # 📥 Save the session log
         SessionLog.objects.create(
             user=user,
             login_time=login_time,
-            logout_time=logout_time
+            logout_time=logout_time,
+            session_duration=session_duration
         )
 
+        print(f"📄 {user.username} | Login: {login_time.strftime('%Y-%m-%d %H:%M')} | Logout: {logout_time.strftime('%Y-%m-%d %H:%M')}")
+        
 print("✅ Successfully populated session logs with corrected timestamps in Asia/Kolkata.")

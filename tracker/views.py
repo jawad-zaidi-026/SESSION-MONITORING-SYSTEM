@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.utils.timezone import now, make_aware, localtime
 from django.conf import settings
 from datetime import datetime, timedelta
-
+import pytz
 from .models import SessionLog
 
 # 🔍 Anomaly logic
@@ -17,7 +17,7 @@ def is_anomalous(log):
     if log.logout_time:
         if log.logout_time < log.login_time:
             notes.append("⚠️ Logout before login")
-        elif log.logout_time > now():
+        elif log.logout_time > now().astimezone(pytz.timezone("Asia/Kolkata")):
             notes.append("⚠️ Future logout time")
 
     duration = (log.logout_time - log.login_time) if log.logout_time else timedelta(0)
