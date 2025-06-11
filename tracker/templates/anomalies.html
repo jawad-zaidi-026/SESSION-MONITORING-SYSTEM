@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Anomalies</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 40px;
+            background-color: #f7f9fc;
+        }
+        h1 {
+            color: #222;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        th, td {
+            padding: 14px;
+            border: 1px solid #e1e1e1;
+            text-align: left;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+        .tag {
+            background-color: #ffc107;
+            color: black;
+            padding: 3px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-right: 4px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Detected Session Anomalies</h1>
+
+    <table>
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Login Time</th>
+                <th>Logout Time</th>
+                <!-- <th>Duration</th> -->
+                <th>Anomalies</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in anomalies %}
+                <tr>
+                    <td>{{ log.user.username }}</td>
+                    <td>{{ log.login_time }}</td>
+                    <td>{{ log.logout_time }}</td>
+                    <!-- <td>
+                        {% if log.logout_time %}
+                            {{ log.logout_time|timesince:log.login_time }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td> -->
+                    <td>
+                        {% for note in log.anomalies %}
+                            <span class="tag">{{ note }}</span>
+                        {% endfor %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

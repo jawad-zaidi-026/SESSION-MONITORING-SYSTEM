@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Session Logs Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gradient-to-br from-gray-100 to-blue-50 min-h-screen text-gray-800 font-[Inter]">
+
+<div class="max-w-7xl mx-auto px-4 py-10">
+    <h1 class="text-4xl font-bold mb-10 text-center text-blue-700 drop-shadow-md">🧾 Session Logs Dashboard</h1>
+
+    <!-- Stats Section -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-xl shadow-md text-center">
+            <h2 class="text-xl font-semibold text-gray-700">🚨 Anomalies Today</h2>
+            <p class="text-3xl font-bold text-red-600 mt-2">{{ anomaly_count }}</p>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-md">
+            <h2 class="text-xl font-semibold text-center text-gray-700">📊 Login Duration (Hours)</h2>
+            <canvas id="loginChart" height="200"></canvas>
+        </div>
+    </div>
+
+    <!-- Filter Form -->
+    <form method="get" class="bg-white p-6 rounded-xl shadow-md flex flex-wrap gap-4 justify-center mb-8">
+        <input type="text" name="user" placeholder="Search username"
+               value="{{ request.GET.user }}"
+               class="px-4 py-2 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring focus:ring-blue-300">
+        <input type="date" name="start" value="{{ request.GET.start }}"
+               class="px-4 py-2 rounded-lg border border-gray-300 shadow-sm">
+        <input type="date" name="end" value="{{ request.GET.end }}"
+               class="px-4 py-2 rounded-lg border border-gray-300 shadow-sm">
+        <button type="submit"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-medium transition-all">
+            Filter
+        </button>
+        <a href="{% url 'dashboard' %}" class="text-blue-500 hover:underline font-medium mt-2 sm:mt-0">Clear</a>
+    </form>
+
+    <!-- Table -->
+    <div class="overflow-x-auto rounded-xl shadow-lg bg-white">
+        <table class="min-w-full text-sm text-left">
+            <thead class="bg-blue-600 text-white text-base">
+                <tr>
+                    <th class="px-6 py-4">👤 User</th>
+                    <th class="px-6 py-4">🕒 Login</th>
+                    <th class="px-6 py-4">🚪 Logout</th>
+                    <!-- <th class="px-6 py-4">⏳ Duration</th> -->
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr class="border-b hover:bg-blue-50 transition">
+                    <td class="px-6 py-4 font-medium">{{ log.user.username }}</td>
+                    <td class="px-6 py-4">{{ log.login_time|date:"Y-m-d H:i" }}</td>
+                    <td class="px-6 py-4">
+                        {% if log.logout_time %}
+                            {{ log.logout_time|date:"Y-m-d H:i" }}
+                        {% else %}
+                            <span class="text-gray-400 italic">Active</span>
+                        {% endif %}
+                    </td>
+                    
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="text-center py-6 text-gray-500 italic">No logs found for selected filters.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            
+        </table>
+    </div>
+</div>
+
+<!-- Chart Script -->
+<script>
+    const ctx = document.getElementById('loginChart').getContext('2d');
+    const loginChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: {{ usernames|safe }},
+            datasets: [{
+                label: 'Hours Logged In',
+                data: {{ durations|safe }},
+                backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                borderColor: 'rgba(59, 130, 246, 1)',
+                borderWidth: 1,
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Hours'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+</script>
+
+</body>
+</html>
